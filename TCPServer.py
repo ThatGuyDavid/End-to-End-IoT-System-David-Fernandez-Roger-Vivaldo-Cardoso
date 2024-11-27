@@ -58,6 +58,42 @@ def calculate_query_1():
     # Return a message of the resulatant of the calculations from the queries for the user
     message = f"\nThe average moisture in the kitchen fridge over 3 hours is {relative_humidity:.2f}% (RH%)\n\n"
     return message
+    
+def calculate_query_2():
+    # Connects to MongoDB database
+    collection = db["MQTT_virtual"]
+
+    # Executes the query
+    dishwasher_id = "kda-139-r7n-36n"
+    documents = collection.find({"payload.parent_asset_uid": dishwasher_id},
+                                {"payload.Water_consumption_sensor_DW": 1})
+
+    values = 0
+    count = 0
+
+    # Loops through each document from the query
+    for doc in documents:
+        # Accesses the nested field in 'payload'. In case 'payload' does not exist,
+        # returns '{}'.
+        value = doc.get("payload", {}).get("Water_consumption_sensor_DW")
+
+        # If value is not 'NULL', adds itself to values and increments count.
+        # Will be used later to find the average
+        if value is not None:
+            try:
+                values += float(value)
+                count += 1
+
+            except ValueError:
+                print("Problem when attempting to covert a value.")
+
+    # Error handling in case count is 0
+    if count > 0:
+        average = round(values / count, 2)
+        return average
+    else:
+        print("Could not calculate the average at this time.")
+        return
 
 # Used to handle user input that does not result in an integer.
 def validate():
@@ -105,41 +141,11 @@ def tcp_server(host, port):
             # Calculate the relative humidity of the Fridge located in the kitchen
             message: str = calculate_query_1()
             incomingSocket.send(bytes(str(message), encoding='utf-8'))
+            
         elif query == 2:
-            # Calculate the average water consumption per cycle in my smart dishwasher
-           # Connects to MongoDB database
-            collection = db["MQTT_virtual"]
-
-            # Executes the query
-            dishwasher_id = "kda-139-r7n-36n"
-            documents = collection.find({"payload.parent_asset_uid": dishwasher_id},
-                                        {"payload.Water_consumption_sensor_DW": 1})
-
-            values = 0
-            count = 0
-
-            # Loops through each document from the query
-            for doc in documents:
-                # Accesses the nested field in 'payload'. In case 'payload' does not exist,
-                # returns '{}'.
-                value = doc.get("payload", {}).get("Water_consumption_sensor_DW")
-
-                # If value is not 'NULL', adds itself to values and increments count.
-                # Will be used later to find the average
-                if value is not None:
-                    try:
-                        values += float(value)
-                        count += 1
-
-                    except ValueError:
-                        print("Problem when attempting to covert a value.")
-
-            # Error handling in case count is 0
-            if count > 0:
-                average = round(values/count, 2)
-                incomingSocket.send(str(average).encode('utf-8'))
-            else:
-                print("Could not calculate the average at this time.")
+            water_consumption = calculate_query_2()
+            incomingSocket.send(str(water_consumption).encode('utf-8'))
+            
         else:
             # Calculate who has consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)
             continue
