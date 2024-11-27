@@ -58,7 +58,7 @@ while True:
 
         if (choice == 1) or (choice == 2) or (choice == 3):
             break
-        
+
         print("Can not process query at this time, enter 1,2, or 3 to select one of the following:")
 
     # The choice is encoded into bytes and then sent to the server.
@@ -66,7 +66,14 @@ while True:
 
     # The client receives the servers responses (up to 2048 bytes) and decodes it into a string.
     serverResponse = myTCPSocket.recv(2048).decode('utf-8')
-    print(serverResponse)
+    if choice == 1:
+        pass
+
+    if choice == 2:
+        print("Average water consumption is about", serverResponse, "gallons.")
+
+    if choice == 3:
+         pass
 
     print("Do you wish to continue sending messages to this server?")
     print("Enter 1 to continue")
