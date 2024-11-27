@@ -107,7 +107,39 @@ def tcp_server(host, port):
             incomingSocket.send(bytes(str(message), encoding='utf-8'))
         elif query == 2:
             # Calculate the average water consumption per cycle in my smart dishwasher
-            continue
+           # Connects to MongoDB database
+            collection = db["MQTT_virtual"]
+
+            # Executes the query
+            dishwasher_id = "kda-139-r7n-36n"
+            documents = collection.find({"payload.parent_asset_uid": dishwasher_id},
+                                        {"payload.Water_consumption_sensor_DW": 1})
+
+            values = 0
+            count = 0
+
+            # Loops through each document from the query
+            for doc in documents:
+                # Accesses the nested field in 'payload'. In case 'payload' does not exist,
+                # returns '{}'.
+                value = doc.get("payload", {}).get("Water_consumption_sensor_DW")
+
+                # If value is not 'NULL', adds itself to values and increments count.
+                # Will be used later to find the average
+                if value is not None:
+                    try:
+                        values += float(value)
+                        count += 1
+
+                    except ValueError:
+                        print("Problem when attempting to covert a value.")
+
+            # Error handling in case count is 0
+            if count > 0:
+                average = round(values/count, 2)
+                incomingSocket.send(str(average).encode('utf-8'))
+            else:
+                print("Could not calculate the average at this time.")
         else:
             # Calculate who has consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)
             continue
