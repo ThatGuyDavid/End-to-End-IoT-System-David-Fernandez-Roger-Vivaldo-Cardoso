@@ -68,20 +68,13 @@ while True:
     serverResponse = myTCPSocket.recv(2048).decode('utf-8')
     
     if choice == 1:
-        print("Average moisture inside the fridge in the pass three hours is", serverResponse)
+        print(f"\nThe average moisture in the kitchen fridge over 3 hours is {serverResponse}% (RH%)\n\n")
 
     if choice == 2:
-        print("Average water consumption is about", serverResponse, "gallons.")
+        print(f"\nAverage water consumption is about {serverResponse} gallons per cycle.\n\n")
 
     if choice == 3:
-        if int(serverResponse) == 1:
-            print("Dishwasher used more electricity")
-        elif int(serverResponse) == 2:
-            print("Fridge 1 used more electricity")
-        elif int(serverResponse) == 3:
-            print("Fridge 2 used more electricity")
-        else:
-            print("Something happen, I'll fix it later lol")
+        print(f"\nThe device with the highest total consumption is {serverResponse} units.\n\n")
 
 
     print("Do you wish to continue sending messages to this server?")
