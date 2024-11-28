@@ -19,9 +19,9 @@ db = client[MONGO_DB_NAME]
 # Function used to gather data from the database and calculate the current or relatively current - Relative Humidity (Fridge in Kitchen)
 def calculate_query_1():
     # The collection with regards to metadata
-    metadata = db["IoT_metadata"]
+    metadata = db[next((name for name in db.list_collection_names() if "metadata" in name), None)]
     # The collection with regards to virtualized data from the devices and sensors
-    virtual = db["IoT_virtual"]
+    virtual = db[next((name for name in db.list_collection_names() if "virtual" in name), None)]
     # Parameter for the search located in Metadata
     location: str = "Kitchen"
     # Parameters of event type for the search located in Metadata
@@ -60,12 +60,14 @@ def calculate_query_1():
     return message
     
 def calculate_query_2():
-    # Connects to MongoDB database
-    collection = db["MQTT_virtual"]
+    # The collection with regards to metadata
+    metadata = db[next((name for name in db.list_collection_names() if "metadata" in name), None)]
+    # The collection with regards to virtualized data from the devices and sensors
+    virtual = db[next((name for name in db.list_collection_names() if "virtual" in name), None)]
 
     # Executes the query
     dishwasher_id = "kda-139-r7n-36n"
-    documents = collection.find({"payload.parent_asset_uid": dishwasher_id},
+    documents = virtual.find({"payload.parent_asset_uid": dishwasher_id},
                                 {"payload.Water_consumption_sensor_DW": 1})
 
     values = 0
