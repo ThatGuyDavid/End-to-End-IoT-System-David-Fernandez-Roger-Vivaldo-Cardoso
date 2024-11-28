@@ -95,6 +95,66 @@ def calculate_query_2():
         print("Could not calculate the average at this time.")
         return
 
+
+def calculate_query_3():
+    virtual = db["MQTT_virtual"]
+    dishwasher_id = "kda-139-r7n-36n"
+    fridge1_id = "7e07b996-34cd-4171-b2b9-531218c8c498"
+    fridge2_id = "427-py1-2sz-zuf"
+
+    value_DW = 0
+    value_F = 0
+    value_F2 = 0
+    dishwasher_doc = virtual.find({"payload.parent_asset_uid": dishwasher_id},
+                                {"payload.Ammeter-DW": 1})
+    for doc in dishwasher_doc:
+        value = doc.get("payload", {}).get("Ammeter-DW")
+        if value is not None:
+            try:
+                value_DW += float(value)
+
+            except ValueError:
+                print("Problem when attempting to covert a value.")
+
+    fridge1_doc = virtual.find({"payload.parent_asset_uid": fridge1_id},
+                                  {"payload.sensor 1 7e07b996-34cd-4171-b2b9-531218c8c498": 1})
+    for doc in fridge1_doc:
+        value = doc.get("payload", {}).get("sensor 1 7e07b996-34cd-4171-b2b9-531218c8c498")
+        if value is not None:
+            try:
+                value_F += float(value)
+
+            except ValueError:
+                print("Problem when attempting to covert a value.")
+
+    fridge2_doc = virtual.find({"payload.parent_asset_uid": fridge2_id},
+                                  {"payload.Ammeter - Fridge": 1})
+
+    for doc in fridge2_doc:
+        value = doc.get("payload", {}).get("Ammeter - Fridge")
+        if value is not None:
+            try:
+                value_F2 += float(value)
+
+            except ValueError:
+                print("Problem when attempting to covert a value.")
+
+    round(value_DW,2)
+    round(value_F,2)
+    round(value_F2,2)
+
+    if (value_DW > value_F) and (value_DW > value_F2):
+        return 1
+
+    elif (value_F > value_DW) and (value_F > value_F2):
+        return 2
+
+    elif (value_F2 > value_DW) and (value_F2 > value_F):
+        return 3
+
+    else:
+        return 4
+
 # Used to handle user input that does not result in an integer.
 def validate():
     while True:
@@ -148,7 +208,8 @@ def tcp_server(host, port):
             
         else:
             # Calculate who has consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)
-            continue
+            selection = calculate_query_3()
+            incomingSocket.send(str(selection).encode('utf-8'))
         
 
         # Send a response back to client, encoding it in bytes.
