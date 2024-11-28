@@ -66,7 +66,23 @@ while True:
 
     # The client receives the servers responses (up to 2048 bytes) and decodes it into a string.
     serverResponse = myTCPSocket.recv(2048).decode('utf-8')
-    print(serverResponse)
+    
+    if choice == 1:
+        print("Average moisture inside the fridge in the pass three hours is", serverResponse)
+
+    if choice == 2:
+        print("Average water consumption is about", serverResponse, "gallons.")
+
+    if choice == 3:
+        if int(serverResponse) == 1:
+            print("Dishwasher used more electricity")
+        elif int(serverResponse) == 2:
+            print("Fridge 1 used more electricity")
+        elif int(serverResponse) == 3:
+            print("Fridge 2 used more electricity")
+        else:
+            print("Something happen, I'll fix it later lol")
+
 
     print("Do you wish to continue sending messages to this server?")
     print("Enter 1 to continue")
