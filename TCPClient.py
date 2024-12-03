@@ -1,5 +1,7 @@
 import socket
 import sys
+from wsgiref.simple_server import server_version
+
 
 # Used to handle user input that does not result in an integer.
 def validate():
@@ -67,13 +69,14 @@ while True:
     # The client receives the servers responses (up to 2048 bytes) and decodes it into a string.
     serverResponse = myTCPSocket.recv(2048).decode('utf-8')
     if choice == 1:
-        pass
+        print(f"\nThe average moisture in the kitchen fridge over 3 hours is {serverResponse}% (RH%)\n\n")
 
     if choice == 2:
-        print("Average water consumption is about", serverResponse, "gallons.")
+        print(f"\nAverage water consumption is about {serverResponse} gallons per cycle.\n\n")
 
     if choice == 3:
-         pass
+        print(f"\nThe device with the highest total consumption is {serverResponse} units.\n\n")
+
 
     print("Do you wish to continue sending messages to this server?")
     print("Enter 1 to continue")
