@@ -120,7 +120,7 @@ def calculate_query_2():
 
     # Error handling in case count is 0
     if count > 0:
-        average = round(values / math.ceil(count / 60), 2)
+        average = round(values / 15, 2)
         return average
     else:
         print("No MetaData and/or Virtual Data collection found")
