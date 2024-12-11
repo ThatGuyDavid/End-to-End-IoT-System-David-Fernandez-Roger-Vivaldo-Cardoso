@@ -44,7 +44,8 @@ def calculate_query_1():
         })
         device_id: str = device["assetUid"]
     else:
-        device_id = "7e07b996-34cd-4171-b2b9-531218c8c498"
+        print("Missing Metadata")
+        return 0
     # Gather every data input of the specified Device that contains a moisture reading and also is within the last 3 hours
     results = virtual.find({
     "$expr": {
@@ -60,7 +61,7 @@ def calculate_query_1():
     relative_humidity = sum(humidities) / len(humidities)
 
     return round(relative_humidity, 2)
-    
+  
 def calculate_query_2():
     # The collection with regards to metadata
     metadata_name = next((name for name in db.list_collection_names() if "metadata" in name), None)
@@ -79,12 +80,12 @@ def calculate_query_2():
 
         device_id: str = device["assetUid"]
 
-        #documents = virtual.find({"payload.parent_asset_uid": device_id,"payload.Water Consumption Sensor - Dishwasher": {"$exists": True}})
     else:
         device_id = "kda-139-r7n-36n"
 
     documents = virtual.find({"payload.parent_asset_uid": device_id,
                 "payload.Water Consumption Sensor - Dishwasher": {"$exists": True}})
+
     values = 0
     count = 0
 
@@ -92,6 +93,7 @@ def calculate_query_2():
     for doc in documents:
         # Accesses the nested field in 'payload'. In case 'payload' does not exist,
         # returns '{}'.
+
         value = doc.get("payload", {}).get("Water_consumption_sensor_DW") or doc["payload"].get("Water Consumption Sensor - Dishwasher")
 
         # If value is not 'NULL', adds itself to values and increments count.
@@ -134,6 +136,7 @@ def calculate_query_3():
         # Store names of devices
         device_names = []
 
+
         # Go through each device tto acquire their [name, id, and ammeter_name]
         for device in devices:
             device_ids.append(device["assetUid"])
@@ -147,9 +150,8 @@ def calculate_query_3():
                 ammeter_names.append(ammeter["customAttributes"]["name"])
 
     else:
-        device_ids = ["kda-139-r7n-36n","7e07b996-34cd-4171-b2b9-531218c8c498","427-py1-2sz-zuf"]
-        device_names = ["Dishwasher", "Fridge 1", "Fridge 2"]
-        ammeter_names = ["Ammeter-DW", "Ammeter - Fridge", "Ammeter - Fridge"]
+        print("No MetaData collection found")
+        return 0
 
     # Total Consumption will be stored in tthe dictionary with the name and keybeing device_id
     electricity_data = {}
@@ -159,15 +161,16 @@ def calculate_query_3():
         documents = virtual.find({"payload.parent_asset_uid": id,
                 f"payload.{ammeter}": {"$exists": True}})
         
-        # TTotal consumption tracker
+        # Total consumption tracker
         total_consumption = 0
 
         # Loop through the documents of each respective Device
         for doc in documents:
 
+
             # Type conversion andling
             try:
-                # Totall consumption logic
+                # Total consumption logic
                 consumption = float(doc["payload"].get(ammeter, 0)) if ammeter else 0
                 total_consumption += consumption
             except ValueError:
@@ -183,12 +186,13 @@ def calculate_query_3():
     # Calculate the device with the most total consumption
     max_device = max(electricity_data.items(), key=lambda item: item[1]["total_consumption"])
     # Get the name and total consumption for highest consumption device
-    device_name, total_consumption = max_device[1]["name"], max_device[1]["total_consumption"]
+    device_name, total_consumption = max_device[1]["name"], (120 * (max_device[1]["total_consumption"]) * 0.9)/1000
 
     # Set message to be returned to client (device name and total consumption)
-    message = (f"{device_name} with {total_consumption:.2f}")
+    message = f"{device_name} with {total_consumption:.2f}"
 
     return message
+
 
 # Used to handle user input that does not result in an integer.
 def validate():
@@ -199,9 +203,11 @@ def validate():
         except ValueError:
             print("The number entered is not an integer.")
 
-# Set up TCP Server (host = ServerIP, port = ServerPort). Arguements passed are the serverIp and serverPort in which the server will be hosted on     
+            
+# Set up TCP Server (host = ServerIP, port = ServerPort). Arguments passed are the
+# serverIp and serverPort in which the server will be hosted on
 def tcp_server(host, port):
-    # Set the serverIp and serverPort tto the arguements
+    # Set the serverIp and serverPort to the arguements
     serverIP: str = host
     serverPort: int = port
 
@@ -224,7 +230,6 @@ def tcp_server(host, port):
     # Stores the socket object, and the address of the connected client respectively
     incomingSocket, incomingAddress = myTCPSocket.accept()
     print(f"Client Connected Successfully  {incomingAddress}")
-    
     # Test database
     # print(db.list_collection_names())
 
@@ -232,6 +237,7 @@ def tcp_server(host, port):
         # Receives client message (up to 1024 bytes), and decodes the data into a string.
         query = int(incomingSocket.recv(1024).decode('utf-8'))
         print(f"Recieved query: {query}")
+
         if query == 1:
             # Calculate the relative humidity of the Fridge located in the kitchen
             message: str = calculate_query_1()
@@ -245,7 +251,7 @@ def tcp_server(host, port):
             # Calculate who has consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)
             selection = calculate_query_3()
             incomingSocket.send(str(selection).encode('utf-8'))
-        
+
 
         # Send a response back to client, encoding it in bytes.
         # incomingSocket.send(bytes(str("Message received! Modified message: " + myData.upper()), encoding='utf-8'))
@@ -253,6 +259,7 @@ def tcp_server(host, port):
 
     # Closes socket connection
     incomingSocket.close()
+
 
 if __name__ == "__main__":
     # This portion stimulates how the server is set up
@@ -263,12 +270,13 @@ if __name__ == "__main__":
         if user == 1:
             serverIP: str = 'localhost'
             serverPort: int = 1024
-            tcp_server(serverIP,serverPort)
+            tcp_server(serverIP, serverPort)
             break
 
         else:
             serverIP: str = input("Enter the desired address for this server: ")
             print("Enter the desired port number for this server: ")
             serverPort: int = validate()
-            tcp_server(serverIP,serverPort)
+            tcp_server(serverIP, serverPort)
+
             break

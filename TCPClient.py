@@ -1,5 +1,7 @@
 import socket
 import sys
+from wsgiref.simple_server import server_version
+
 
 # Used to handle user input that does not result in an integer.
 def validate():
@@ -58,7 +60,7 @@ while True:
 
         if (choice == 1) or (choice == 2) or (choice == 3):
             break
-        
+
         print("Can not process query at this time, enter 1,2, or 3 to select one of the following:")
 
     # The choice is encoded into bytes and then sent to the server.
