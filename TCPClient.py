@@ -68,6 +68,7 @@ while True:
 
     # The client receives the servers responses (up to 2048 bytes) and decodes it into a string.
     serverResponse = myTCPSocket.recv(2048).decode('utf-8')
+    
     if choice == 1:
         print(f"\nThe average moisture in the kitchen fridge over 3 hours is {serverResponse}% (RH%)\n\n")
 

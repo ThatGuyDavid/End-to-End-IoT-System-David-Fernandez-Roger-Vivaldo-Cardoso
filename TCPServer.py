@@ -14,14 +14,15 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 
 # Global Variables (MongoDb)
 client = MongoClient(MONGO_URI)
-db = client[MONGO_DB_NAME]
+db = client[MONGO_DB_NAME] 
 
+# Function used to gather data from the database and calculate the current or relatively current - Relative Humidity (Fridge in Kitchen)
 def calculate_query_1():
-    # The collection regarding metadata
+    # The collection with regards to metadata
     metadata_collection = next((name for name in db.list_collection_names() if "metadata" in name), None)
-    # The collection regarding virtualized data from the devices and sensors
+    # The collection with regards to virtualized data from the devices and sensors
     virtual = db[next((name for name in db.list_collection_names() if "virtual" in name), None)]
-
+    
     # Calculate the timestamp for 3 hours ago
     current_time = datetime.now(tz=timezone.utc)
     three_hours_ago = current_time - timedelta(hours=3)
@@ -36,35 +37,36 @@ def calculate_query_1():
         location: str = "Kitchen"
         # Parameters of event type for the search located in Metadata
         event_types = ["Moisture Monitoring"]
-        # Database query on the metadata collection for devices that fit the {Location:Kitchen, Event types: Moisture, Temperature}
+        # Database query on the metadata collection for devices that fit the {Location:Kitchen, Eventypes: Moisture, Temperature}
         device = metadata.find_one({
             "eventTypes": {"$in": event_types},
             "customAttributes.additionalMetadata.Location": location,
         })
         device_id: str = device["assetUid"]
     else:
-        device_id = "427-py1-2sz-zuf"
+        print("Missing Metadata")
+        return 0
     # Gather every data input of the specified Device that contains a moisture reading and also is within the last 3 hours
     results = virtual.find({
-        "$expr": {
-            "$gte": [{"$toLong": "$payload.timestamp"}, three_hours_ago_unix]  # Convert to integer for comparison
-        },
-        "payload.parent_asset_uid": device_id,
-        "payload.Moisture Meter - Fridge": {"$exists": True}})
-    # Aggregate the values read from the moisture meter for the data points into a singular list
-    humidities = [float(result["payload"].get("Moisture Meter - Fridge")) for result in results]
+    "$expr": {
+        "$gte": [{"$toLong": "$payload.timestamp"}, three_hours_ago_unix]  # Convert to integer for comparison
+    },
+    "payload.parent_asset_uid": device_id,
+    "payload.Moisture Meter - Fridge 1": {"$exists": True}})
+    # Aggregate the values read from the moisture meter for the data points into a singlular list
+    humidities = [float(result["payload"].get("Moisture Meter - Fridge 1")) for result in results]
     # Calculate the relative humidity of the Fridge given the data points of the last 3 hours
     if len(humidities) == 0:
         return "{Error no readings}"
     relative_humidity = sum(humidities) / len(humidities)
 
     return round(relative_humidity, 2)
-
+  
 def calculate_query_2():
-    # The collection regarding metadata
+    # The collection with regards to metadata
     metadata_name = next((name for name in db.list_collection_names() if "metadata" in name), None)
 
-    # The collection regarding virtualized data from the devices and sensors
+    # The collection with regards to virtualized data from the devices and sensors
     virtual = db[next((name for name in db.list_collection_names() if "virtual" in name), None)]
 
     # If metadata collection exists
@@ -82,7 +84,8 @@ def calculate_query_2():
         device_id = "kda-139-r7n-36n"
 
     documents = virtual.find({"payload.parent_asset_uid": device_id,
-                              "payload.Water_consumption_sensor_DW": {"$exists": True}})
+                "payload.Water Consumption Sensor - Dishwasher": {"$exists": True}})
+
     values = 0
     count = 0
 
@@ -90,7 +93,8 @@ def calculate_query_2():
     for doc in documents:
         # Accesses the nested field in 'payload'. In case 'payload' does not exist,
         # returns '{}'.
-        value = doc.get("payload", {}).get("Water_consumption_sensor_DW")
+
+        value = doc.get("payload", {}).get("Water_consumption_sensor_DW") or doc["payload"].get("Water Consumption Sensor - Dishwasher")
 
         # If value is not 'NULL', adds itself to values and increments count.
         # Will be used later to find the average
@@ -110,17 +114,18 @@ def calculate_query_2():
         print("Could not calculate the average at this time.")
         return
 
+
 def calculate_query_3():
-    # The collection regarding metadata
+    # The collection with regards to metadata
     metadata_name = next((name for name in db.list_collection_names() if "metadata" in name), None)
 
-    # The collection regarding virtualized data from the devices and sensors
+    # The collection with regards to virtualized data from the devices and sensors
     virtual = db[next((name for name in db.list_collection_names() if "virtual" in name), None)]
 
     # If metadata collection exists
     if metadata_name:
         metadata = db[metadata_name]
-        event_types = ["Electricity Consumption"]
+        event_types = ["Electricity Consumption Monitoring"]
         devices = metadata.find({
             "eventTypes": {"$in": event_types},
         })
@@ -131,41 +136,39 @@ def calculate_query_3():
         # Store names of devices
         device_names = []
 
-        # Go through each device to acquire their [name, id, and ammeter_name]
+
+        # Go through each device tto acquire their [name, id, and ammeter_name]
         for device in devices:
             device_ids.append(device["assetUid"])
             device_names.append(device["customAttributes"].get("name", f"Device {device['assetUid']}"))
             # Gather every possible ammeter that may be in the boards
             ammeter_sensors = [sensor for board in device["customAttributes"].get("children", [])
-                               for sensor in board.get("customAttributes", {}).get("children", [])
-                               if
-                               sensor.get("customAttributes", {}).get("type") == "SENSOR" and "Ammeter" in sensor.get(
-                                   "customAttributes", {}).get("name", "")]
+                            for sensor in board.get("customAttributes", {}).get("children", [])
+                            if sensor.get("customAttributes", {}).get("type") == "SENSOR" and "Ammeter" in sensor.get("customAttributes", {}).get("name", "")]
             # Get the names of the ammeters
             for ammeter in ammeter_sensors:
-                print(ammeter["customAttributes"]["name"])
                 ammeter_names.append(ammeter["customAttributes"]["name"])
 
     else:
-        device_ids = ["kda-139-r7n-36n", "427-py1-2sz-zuf", "7e07b996-34cd-4171-b2b9-531218c8c498"]
-        device_names = ["Smart Dishwasher", "Smart Fridge", "device 1 7e07b996-34cd-4171-b2b9-531218c8c498"]
-        ammeter_names = ["Ammeter-DW", "Ammeter - Fridge", "Ammeter 7e07b996-34cd-4171-b2b9-531218c8c498"]
+        print("No MetaData collection found")
+        return 0
 
-    # Total Consumption will be stored in the dictionary with the name and keybinding device_id
+    # Total Consumption will be stored in tthe dictionary with the name and keybeing device_id
     electricity_data = {}
 
-    # Loop through the devices and ammeters to find the documents in the database associated
+    # Loop through the devices and ammeters to find the documents in the database associated 
     for id, name, ammeter in zip(device_ids, device_names, ammeter_names):
         documents = virtual.find({"payload.parent_asset_uid": id,
-                                  f"payload.{ammeter}": {"$exists": True}})
-
+                f"payload.{ammeter}": {"$exists": True}})
+        
         # Total consumption tracker
         total_consumption = 0
 
         # Loop through the documents of each respective Device
         for doc in documents:
 
-            # Type conversion handling
+
+            # Type conversion andling
             try:
                 # Total consumption logic
                 consumption = float(doc["payload"].get(ammeter, 0)) if ammeter else 0
@@ -200,7 +203,7 @@ def validate():
         except ValueError:
             print("The number entered is not an integer.")
 
-
+            
 # Set up TCP Server (host = ServerIP, port = ServerPort). Arguments passed are the
 # serverIp and serverPort in which the server will be hosted on
 def tcp_server(host, port):
@@ -227,7 +230,6 @@ def tcp_server(host, port):
     # Stores the socket object, and the address of the connected client respectively
     incomingSocket, incomingAddress = myTCPSocket.accept()
     print(f"Client Connected Successfully  {incomingAddress}")
-
     # Test database
     # print(db.list_collection_names())
 
@@ -240,13 +242,16 @@ def tcp_server(host, port):
             # Calculate the relative humidity of the Fridge located in the kitchen
             message: str = calculate_query_1()
             incomingSocket.send(bytes(str(message), encoding='utf-8'))
-
+            
         elif query == 2:
             water_consumption = calculate_query_2()
             incomingSocket.send(str(water_consumption).encode('utf-8'))
+            
         else:
+            # Calculate who has consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)
             selection = calculate_query_3()
             incomingSocket.send(str(selection).encode('utf-8'))
+
 
         # Send a response back to client, encoding it in bytes.
         # incomingSocket.send(bytes(str("Message received! Modified message: " + myData.upper()), encoding='utf-8'))
@@ -273,4 +278,5 @@ if __name__ == "__main__":
             print("Enter the desired port number for this server: ")
             serverPort: int = validate()
             tcp_server(serverIP, serverPort)
+
             break
