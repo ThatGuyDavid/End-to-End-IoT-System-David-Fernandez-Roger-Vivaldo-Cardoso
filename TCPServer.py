@@ -183,7 +183,7 @@ def calculate_query_3():
     # Calculate the device with the most total consumption
     max_device = max(electricity_data.items(), key=lambda item: item[1]["total_consumption"])
     # Get the name and total consumption for highest consumption device
-    device_name, total_consumption = max_device[1]["name"], max_device[1]["total_consumption"]
+    device_name, total_consumption = max_device[1]["name"], (120 * (max_device[1]["total_consumption"]) * 0.9)/1000
 
     # Set message to be returned to client (device name and total consumption)
     message = f"{device_name} with {total_consumption:.2f}"
