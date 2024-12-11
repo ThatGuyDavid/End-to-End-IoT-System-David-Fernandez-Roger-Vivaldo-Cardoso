@@ -73,7 +73,6 @@ def calculate_query_1():
 
     return round(relative_humidity, 2)
 
-
 def calculate_query_2():
     # The collection with regards to metadata
     metadata_name = next(
@@ -201,10 +200,10 @@ def calculate_query_3():
     max_device = max(electricity_data.items(),
                      key=lambda item: item[1]["total_consumption"])
     # Get the name and total consumption for highest consumption device
-    device_name, total_consumption = max_device[1]["name"], max_device[1]["total_consumption"]
+    device_name, total_consumption = max_device[1]["name"], (120 * (max_device[1]["total_consumption"]) * 0.9)/1000
 
     # Set message to be returned to client (device name and total consumption)
-    message = (f"{device_name} with {total_consumption:.2f}")
+    message = f"{device_name} with {total_consumption:.2f}"
 
     return message
 
@@ -220,10 +219,9 @@ def validate():
         except ValueError:
             print("The number entered is not an integer.")
 
-
-# Set up TCP Server (host = ServerIP, port = ServerPort). Arguements passed are the serverIp and serverPort in which the server will be hosted on
-
-
+  
+# Set up TCP Server (host = ServerIP, port = ServerPort). Arguments passed are the
+# serverIp and serverPort in which the server will be hosted on
 def tcp_server(host, port):
     # Set the serverIp and serverPort to the arguements
     serverIP: str = host
@@ -251,6 +249,7 @@ def tcp_server(host, port):
         # Receives client message (up to 1024 bytes), and decodes the data into a string.
         query = int(incomingSocket.recv(1024).decode('utf-8'))
         print(f"Recieved query: {query}")
+
         if query == 1:
             # Calculate the relative humidity of the Fridge located in the kitchen
             message: str = calculate_query_1()
@@ -261,6 +260,7 @@ def tcp_server(host, port):
         else:
             selection = calculate_query_3()
             incomingSocket.send(str(selection).encode('utf-8'))
+
         # Send a response back to client, encoding it in bytes.
         # incomingSocket.send(bytes(str("Message received! Modified message: " + myData.upper()), encoding='utf-8'))
         # incomingSocket.send(bytes(str(myData.upper()), encoding='utf-8'))
