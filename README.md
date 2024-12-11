@@ -58,7 +58,7 @@ How would you like to simulate connection?
 Enter 1 for local host
 Enter 2 for to manually enter IP and port
 ...
-Your choice: _
+Your choice:
 Type 2 and hit Enter.
 
 Enter the Server IP and Port in the Client:
